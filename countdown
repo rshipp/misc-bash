@@ -1,0 +1,5 @@
+#!/bin/bash
+for ((time=$1; $time > 0; time--)); do
+  echo -n "$time "
+  sleep 1
+done; echo 0

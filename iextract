@@ -1,0 +1,3 @@
+#!/bin/bash
+# iextract - download and extract tarballs
+wget $1 && tar -xaf $(basename $1) && rm $(basename $1) && echo Extracted.

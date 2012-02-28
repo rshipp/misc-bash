@@ -1,0 +1,8 @@
+#!/bin/bash
+# run like: thisscript myprogram --options
+logfile=writes.log
+strace -o /tmp/writes$BASHPID.log "$@"
+grep -P '(open\(|write\([3-9])' /tmp/writes$BASHPID.log > "$logfile"
+rm /tmp/writes$BASHPID.log
+echo
+cat "$logfile" >&2
