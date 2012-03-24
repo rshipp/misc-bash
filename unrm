@@ -1,7 +1,7 @@
 #!/bin/bash
 # unrm for safe rm
 # "Recover" files after they have been "deleted" with saferm.
-TrashDir='/home/george/.Trash'
+TrashDir=~/.Trash
 mfile="$TrashDir/$UID/.saferm_metadata"
 for file in "$@"; do
   if (grep -q "/$file$" "$mfile" && ! grep -q "===$file$" "$mfile"); then

@@ -3,7 +3,7 @@
 # Permanently delete files in the "recycle bin" created by saferm after a set 
 # amount of time. 
 leavefor=3  #days - (must be between 0 and 28)
-TrashDir='/home/george/.Trash'
+TrashDir=~/.Trash
 mfile="$TrashDir/$UID/.saferm_metadata"
 d=$(date +%d)
 let rd=${d}-${leavefor}

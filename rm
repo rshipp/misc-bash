@@ -2,7 +2,7 @@
 # safe rm
 # Creates a sort of "recycle bin" that can be used to 'rm' files without
 # permanently deleting them.
-TrashDir='/home/george/.Trash'
+TrashDir=~/.Trash
 mfile="$TrashDir/$UID/.saferm_metadata"
 d=$(date +%d)
 [[ -d "$TrashDir/$UID/$d" ]] || mkdir -p "$TrashDir/$UID/$d"
