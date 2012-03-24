@@ -2,7 +2,7 @@ A small collection of bash scripts I find useful.
 
 Descriptions: 
 #bundle 
-My version of the traditional 'bundle' shell script, similar to GNU 'shar'.
+My version of the traditional 'bundle' shell script, similar to GNU 'shar'. Includes built-in file integrity checking; can use tar, xz, gzip, etc; creates a plain-text shell script 'archive' that can be used to transport files of any type, and more. 
 
 #countdown
 A simple 'for' loop that counts down from any numerical value specified as an argument to the script.
