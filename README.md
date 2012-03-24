@@ -1,6 +1,7 @@
-A small collection of bash scripts I find useful.
+This is just a small collection of bash scripts I find useful. Use them or not, in whatever way you wish.
 
-Descriptions: 
+##Descriptions: 
+
 #bundle 
 My version of the traditional 'bundle' shell script, similar to GNU 'shar'. Includes built-in file integrity checking; can use tar, xz, gzip, etc; creates a plain-text shell script 'archive' that can be used to transport files of any type, and more. 
 
