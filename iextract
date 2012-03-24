@@ -35,4 +35,4 @@ ex () {
   fi
 }
 
-main
+main $@
