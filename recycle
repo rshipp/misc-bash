@@ -1,0 +1,15 @@
+#!/bin/bash
+# recycle - for use with saferm
+# Permanently delete files in the "recycle bin" created by saferm after a set 
+# amount of time. 
+leavefor=3  #days - (must be between 0 and 28)
+TrashDir='/home/george/.Trash'
+mfile="$TrashDir/$UID/.saferm_metadata"
+d=$(date +%d)
+let rd=${d}-${leavefor}
+for dir in "$TrashDir/$UID/"*; do
+  dir="$(echo $dir | sed "s,$TrashDir/$UID,,g; s,/,,g")"
+  [[ "$dir" == ".saferm_metadata" ]] && continue
+  [[ -z "$dir" ]] && ( echo "ERR"; exit 0 ) && exit 
+  [[ "$dir" < "$rd" ]] && ( echo "Permanently removing $dir/*"; /bin/rm -r "$TrashDir/$UID/$dir" && sed -i "/^$dir\/.*/d" "$mfile" )
+done

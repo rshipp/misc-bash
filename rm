@@ -1,0 +1,27 @@
+#!/bin/bash
+# safe rm
+# Creates a sort of "recycle bin" that caan be used to 'rm' files w/o 
+# permanently deleting them.
+TrashDir='/home/george/.Trash'
+mfile="$TrashDir/$UID/.saferm_metadata"
+d=$(date +%d)
+[[ -d "$TrashDir/$UID/$d" ]] || mkdir -p "$TrashDir/$UID/$d"
+for file in "$@"; do
+  if (echo $file | grep -q '^-.*'); then 
+    if (echo $file | grep -q 'r'); then
+      rmdirs=true
+    fi
+    continue
+  else
+    if [[ -d "$file" ]]; then
+      [[ "$rmdirs" != "true" ]] && echo "cannot remove \`$file': Is a directory" && continue
+    fi
+    if [[ -e "$TrashDir/$UID/$d/$file" ]]; then
+      ts="$(date +%N)"
+      mv "$file" "$TrashDir/$UID/$d/$file.$ts" && echo "$d/$file.$ts===$file" >> "$mfile" || echo "ERROR!"
+      mv "$TrashDir/$UID/$d/$file" "$TrashDir/$UID/$d/$file.orig$d" && sed -i "s@$d/\($file$\)@$d/\1.orig$d===\1@" "$mfile" || echo "ERROR!"
+    else
+      mv "$file" "$TrashDir/$UID/$d" && echo "$d/$file" >> "$mfile" || echo "ERROR!"
+    fi
+  fi
+done

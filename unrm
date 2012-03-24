@@ -1,0 +1,32 @@
+#!/bin/bash
+# unrm for safe rm
+# "Recover" files after they have been "deleted" with saferm.
+TrashDir='/home/george/.Trash'
+mfile="$TrashDir/$UID/.saferm_metadata"
+for file in "$@"; do
+  if (grep -q "/$file$" "$mfile" && ! grep -q "===$file$" "$mfile"); then
+    f="$(grep "/$file$" "$mfile" | sed 's,^/,,')"
+    [[ -n "$f" ]] && mv "$TrashDir/$UID/$f" ./ && sed -i "/$file$/d" "$mfile"
+  elif grep -q "/$file.*===$file$" "$mfile"; then
+    echo "There seems to be more than one '$file' in the trash bin."
+    echo "Please choose one of:"
+    grep "$file" "$mfile" | sed 's/^[0-9]*\///; s/===.*//'
+  elif grep -q "/$file===.*" "$mfile"; then
+    f="$(grep "/$file===" "$mfile" | sed 's/===.*$//; s,^/,,')"
+    of="$(grep "/$file===" "$mfile" | sed 's/^.*===//; s,^/,,')"
+    [[ -z "$f" ]] && ( echo "ERROR!"; exit 1 )
+    if [[ -d "$TrashDir/$UID/$f" ]]; then
+      mkdir -p "./$of" && mv "$TrashDir/$UID/$f/*" "./$of" && sed -i "/$file===/d" "$mfile" || echo "ERROR!"
+    elif [[ -e "$TrashDir/$UID/$f" ]]; then
+      mv "$TrashDir/$UID/$f" "./$of" && sed -i "/$file===/d" "$mfile" || echo "ERROR!"
+    else
+      echo "ERROR! $file already permanently deleted!"
+    fi
+  elif grep -q "$file" "$mfile"; then
+    echo "'$file' nof found."
+    echo "Did you mean:"
+    grep "$file" "$mfile" | sed 's/^[0-9]*\///; s/===.*//'
+  else
+    echo "'$file' cannot be found."
+  fi
+done

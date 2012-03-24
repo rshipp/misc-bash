@@ -1,1 +1,2 @@
-A small collection of bash scripts I find useful. 
+A small collection of bash scripts I find useful.
+'rm', 'unrm', and 'recycle' must be used together- the others are independent.
