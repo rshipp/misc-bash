@@ -20,7 +20,7 @@ getfortune() {  # get a fortune
 }
 
 convfortune() {  # get rid of html, convert fortunes to the right format
-  local fortune="$(echo "$@" | sed "s/&#39;/'/g; s/<[bBrR]*>//g; s/&gt;/>/g; s/&lt;/</g; s/&quot;/\"/g; s/&#151;/--/g; s/&copy;/p/g; s/&thorn;/P/g; s/&nbsp;/ /g; s/&#146;/'/g; s/&amp;/&/g; s/&frac12/1\/2/g; s/^$/\n/g" | fold -sw75)"
+  local fortune="$(echo "$@" | sed "s/&#39;/'/g; s/<[bBrR]*>//g; s/&gt;/>/g; s/&lt;/</g; s/&quot;/\"/g; s/&#151;/--/g; s/&copy;/p/g; s/&thorn;/P/g; s/&nbsp;/ /g; s/&#146;/'/g; s/&amp;/\&/g; s/&frac12/1\/2/g; s/^$/\n/g" | fold -sw75)"
   local flen="$(echo "$fortune" | wc -l)"
   echo "$(echo "$fortune" | tail -$(echo $flen-1|bc))"
 }
