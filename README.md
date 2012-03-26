@@ -17,7 +17,7 @@ A silly script that pulls fortunes from the ThinkGeek fortunes page, and creates
 #rb
 A simple but ever-so-useful 1-liner that deletes files with the '~' backup extension used by Kate and Kwrite.
 
-#recycle, rm, and unrm
+#recycle, saferm, and unrm
 These three scripts work together to make deleting files from the CLI a little safer. After one too many accidental rm's on my part, I decided to make these. 
 
 #s
