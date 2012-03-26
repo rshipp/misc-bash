@@ -18,10 +18,10 @@ for file in "$@"; do
     fi
     if [[ -e "$TrashDir/$UID/$d/$file" ]]; then
       ts="$(date +%N)"
-      mv "$file" "$TrashDir/$UID/$d/$file.$ts" && echo "$d/$file.$ts===$file" >> "$mfile" || echo "ERROR!"
-      mv "$TrashDir/$UID/$d/$file" "$TrashDir/$UID/$d/$file.orig$d" && sed -i "s@$d/\($file$\)@$d/\1.orig$d===\1@" "$mfile" || echo "ERROR!"
+      mv -f "$file" "$TrashDir/$UID/$d/$file.$ts" && echo "$d/$file.$ts===$file" >> "$mfile" || echo "ERROR!"
+      mv -f "$TrashDir/$UID/$d/$file" "$TrashDir/$UID/$d/$file.orig$d" && sed -i "s@$d/\($file$\)@$d/\1.orig$d===\1@" "$mfile" || echo "ERROR!"
     else
-      mv "$file" "$TrashDir/$UID/$d" && echo "$d/$file" >> "$mfile" || echo "ERROR!"
+      mv -f "$file" "$TrashDir/$UID/$d" && echo "$d/$file" >> "$mfile" || echo "ERROR!"
     fi
   fi
 done

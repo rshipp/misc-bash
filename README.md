@@ -11,6 +11,9 @@ A simple 'for' loop that counts down from any numerical value specified as an ar
 #iextract
 Download and extract archives of almost any type, including tarballs, zips, etc.
 
+#thinkgeek_fortunes
+A silly script that pulls fortunes from the ThinkGeek fortunes page, and creates a 'fortune' database out of them. Requires the 'convmv', 'hd2u', and 'fortune-mod' packages. 
+
 #rb
 A simple but ever-so-useful 1-liner that deletes files with the '~' backup extension used by Kate and Kwrite.
 
