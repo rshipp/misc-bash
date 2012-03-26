@@ -6,8 +6,8 @@
 # You also need a few other thinkgs, like ed, sed, bc, fold, and wget.
 
 # settings
-db='thinkgeek'       # thinkgeek fortunes db to write to. cp to /usr/share/fortune/
-fdb="`pwd`/$db"      # full path to the db
+db='thinkgeek'       # thinkgeek fortunes db to write to. will cp to /usr/share/fortune/
+fdb="`pwd`/$db"      # full path to the db - read code before changing
 sleep='0'            # time to sleep before fetching another fortune
 
 # internal vars - don't change unless you're adapting this to some other page
