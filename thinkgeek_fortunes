@@ -26,7 +26,7 @@ convfortune() {  # get rid of html, convert fortunes to the right format
 }
 
 isindb() {  # see if the fortune is already in our database
-  grep -q "$(echo $\n*$@\n*%)" <<< $(cat "$db") # magic...  ;)
+  grep -q "$(echo %\n*$@\n*%)" <<< $(cat "$db") # magic...  ;)
 }
 
 writefortune() {  # add the fortune to the db
