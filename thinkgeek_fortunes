@@ -35,8 +35,8 @@ writefortune() {  # add the fortune to the db
 
 finally() {  # make the fortunes db ready to go
   echo
-  convmv -f utf8 -t ascii --notest thinkgeek
-  dos2unix thinkgeek
+  convmv -f utf8 -t ascii --notest "$db"
+  dos2unix "$db"
   grep -q % <<< $(head -1 "$db") && ed -s "$db" << EOF
   1d
   wq
