@@ -11,5 +11,5 @@ for dir in "$TrashDir/$UID/"*; do
   dir="$(echo $dir | sed "s,$TrashDir/$UID,,g; s,/,,g")"
   [[ "$dir" == ".saferm_metadata" ]] && continue
   [[ -z "$dir" ]] && ( echo "ERR"; exit 0 ) && exit 
-  [[ "$dir" < "$rd" ]] && ( echo "Permanently removing $dir/*"; /bin/rm -r "$TrashDir/$UID/$dir" && sed -i "/^$dir\/.*/d" "$mfile" )
+  [[ "$dir" < "$rd" ]] && ( echo "Permanently removing $dir/*"; /bin/rm -rf "$TrashDir/$UID/$dir" && sed -i "/^$dir\/.*/d" "$mfile" )
 done
