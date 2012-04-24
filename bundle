@@ -2,36 +2,6 @@
 # my version of the `bundle' shell script (similar to GNU shar). 
 # create a self-extracting shell script that can install any file(s).
 # Usage: bundle [OPTIONS] [FILES] > install_whatever.sh
-#  Notes: 
-# You need a few normal GNU/Linux tools on both sides to use this 
-# script, including bash, base64, chmod, stat, basename, ls, md5sum, gawk, 
-# etc. These tools should be installed on any Linux system, so this script is 
-# fairly portable. For best results on big folders full of stuff, archive 
-# with: 'bundle -z bigfolder > allfiles.tgz.sh' and extract with: 
-# 'chmod +x allfiles.tar.sh && ./allfiles.tar.sh' The main benefit of using 
-# this script is that you can take the output, post it to some pastebin, and 
-# let anyone else download it, without having to use some file-sharing site 
-# or other method of non-text file transfer. You can also email the script to
-# someone, no matter what's in it, even through email providers that do not 
-# allow certain files (like executables), because of the base64, which acts 
-# as obfuscation. The output scripts also compress pretty well, although that 
-# makes them non-plaintext files.  Note that uncompressed bundled files will 
-# be slightly larger than the original files, because of the way base64 works,
-# and because of the extra installation-related stuff in the scripts. This 
-# script is relatively fast (though not anywhere near as fast as tar), and 
-# can handle any number of files, of any size. In my testing, I've found that 
-# bundle (with no/default options) is about 1/10th the speed of tar, and the 
-# resulting shell archive about 3x of the size of an equivalent tar archive 
-# (mostly because bundle is limited to 7-bit (ASCII) characters). In short, 
-# bundle is not a replacement or alternative to tar, but if you want to 
-# create a self-extracting, plaintext archive with built-in integrity 
-# checking and several other useful features, bundle is the way to go. In 
-# addition, bundle can utilize tar, gzip, bzip, and xz when creating archives,
-# just as tar can. 
-#  Todo:
-# Get rid of the current argument stuff, and replace it with getargs.sh
-# Implement the starred features described in usage
-# Make a few other improvements
 ver="george's bundle 0.9.1"
 
 #. getargs.sh  # I'm planning on centralizing and improving the stuff below, and making a script with argument-functions.
