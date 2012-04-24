@@ -10,38 +10,20 @@ getargs() {
       "-u"|"--unzipwith") shift; uzipwith="$1";;
       "-f"|"--filesonly"|"--basename") presdirs=0;;
       "-h"|"--help") usage;;
-      "-v"|"--version") version;;
+      "-v"|"--version") echo "$ver"; exit 0;;
       "-n"|"--norecurse") recurse=0;;
       "-s"|"--sha"|"-s1"|"--sha1") hashwith=sha1sum;;
-      "--sha"*) 
-        alg=$(echo "$1" | sed 's/--sha//g')
-        hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
-      "-s"*)
-        alg=$(echo "$1" | sed 's/-s//g')
-        hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "--sha"*) alg=$(echo "$1" | sed 's/--sha//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "-s"*) alg=$(echo "$1" | sed 's/-s//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
       "-c"|"--crypt") crypt;;
-      "-z"|"--gz"|"--targz"|"--gzip") 
-        uzipwith="tar -xzf"
-        zipwith="tar -czf";;
-      "-j"|"--bz"|"--tarbz"|"") 
-        uzipwith="tar -xjf"
-        zipwith="tar -cjf";;
-      "-x"|"-J"|"--xz"|"--tarxz"|"--xzip")
-        uzipwith="tar -xJf"
-        xz=1
-        zipwith="tar -cf";;
-      "-i"|"--info") 
-        shift
-        info "$1";;
-      "-l"|"-t"|"--list")
-        shift
-        list "$1";;
-      "-e"|"--uuencode")
-        encode=uuencode
-        echo Sorry, this feature is not yet ready. >&2
-        exit 1;;
+      "-z"|"--gz"|"--targz"|"--gzip") uzipwith="tar -xzf" zipwith="tar -czf";;
+      "-j"|"--bz"|"--tarbz"|"--bzip") uzipwith="tar -xjf" zipwith="tar -cjf";;
+      "-x"|"-J"|"--xz"|"--tarxz"|"--xzip") uzipwith="tar -xJf" xz=1 zipwith="tar -cf";;
+      "-i"|"--info") shift; info "$1";;
+      "-l"|"-t"|"--list") shift; list "$1";;
+      "-e"|"--uuencode") encode=uuencode; echo Sorry, this feature is not yet ready. >&2; exit 1;;
       "-d"|"--delete") rmfiles=1;;
-      "-"*) badarg "$1";;
+      "-"*) echo "Unrecognized option '$1'"; echo "Use '$(basename $0) --help' for more information"; exit 1;;
       *) files="$(printf "$files\n$1")"
     esac
   shift
@@ -79,17 +61,6 @@ usage() {
   echo "The default function (no options) is simplest, and best for using when you do not" 
   echo "know what programs the person executing the bundle has installed. For best results" 
   echo "when creating bundles for your own use, the author recommends the options '-s -z'." 
-  exit 0
-}
-
-version() {
-  echo "$ver"
-  exit 0
-}
-
-badarg() {
-  echo "Unrecognized option '$1'"
-  echo "Use '$(basename $0) --help' for more information"
   exit 0
 }
 
