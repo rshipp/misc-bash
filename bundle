@@ -2,97 +2,77 @@
 # my version of the `bundle' shell script (similar to GNU shar). 
 # create a self-extracting shell script that can install any file(s).
 # Usage: bundle [OPTIONS] [FILES] > install_whatever.sh
-ver="george's bundle 0.9.1"
+ver="george's bundle 0.9.2"
 
-#. getargs.sh  # I'm planning on centralizing and improving the stuff below, and making a script with argument-functions.
+getargs() {
+  while [[ "$1" != "" ]]; do
+    case "$1" in
+      "-u"|"--unzipwith") shift; uzipwith="$1";;
+      "-f"|"--filesonly"|"--basename") presdirs=0;;
+      "-h"|"--help") usage;;
+      "-v"|"--version") version;;
+      "-n"|"--norecurse") recurse=0;;
+      "-s"|"--sha"|"-s1"|"--sha1") hashwith=sha1sum;;
+      "--sha"*) 
+        alg=$(echo "$1" | sed 's/--sha//g')
+        hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "-s"*)
+        alg=$(echo "$1" | sed 's/-s//g')
+        hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "-c"|"--crypt") crypt;;
+      "-z"|"--gz"|"--targz"|"--gzip") 
+        uzipwith="tar -xzf"
+        zipwith="tar -czf";;
+      "-j"|"--bz"|"--tarbz"|"") 
+        uzipwith="tar -xjf"
+        zipwith="tar -cjf";;
+      "-x"|"-J"|"--xz"|"--tarxz"|"--xzip")
+        uzipwith="tar -xJf"
+        xz=1
+        zipwith="tar -cf";;
+      "-i"|"--info") 
+        shift
+        info "$1";;
+      "-l"|"-t"|"--list")
+        shift
+        list "$1";;
+      "-e"|"--uuencode")
+        encode=uuencode
+        echo Sorry, this feature is not yet ready. >&2
+        exit 1;;
+      "-d"|"--delete") rmfiles=1;;
+      "-"*) badarg "$1";;
+      *) files="$(printf "$files\n$1")"
+    esac
+  shift
+  done
+}
 
-for arg in "$@"; do
-  if [ -n "$argisu" -a "$argisu" == "1" ]; then
-    uzipwith=$arg
-    argisu=0
-    arg=
-  elif [ -n "$argisb" -a "$argisb" == "1" ]; then
-    bundle=$arg
-    argisb=0
-    arg=
-  fi
-  if [ "$arg" == "--uzipwith" -o "$arg" == "-u" ]; then 
-    argisu=1
-  elif [ "$arg" == "--filesonly" -o "$arg" == "-f" -o "$arg" == "--basename" ]; then  # --basename provided for shar compatibility. 
-    presdirs=0
-  elif [ "$arg" == "--help" -o "$arg" == "-h" ]; then 
-    $0
-    exit 0
-  elif [ "$arg" == "--version" -o "$arg" == "-v" ]; then 
-    echo "$ver"
-    exit 0
-  elif [ "$arg" == "--norecurse" -o "$arg" == "-n" ]; then 
-    recurse=0
-  elif [ "$arg" == "--sha" -o "$arg" == "-s" ]; then 
-    hashwith=sha1sum
-  elif (echo "$arg" | grep -q '^--sha..*'); then 
-    alg=$(echo "$arg" | sed 's/--sha//g')
-    hashwith=$(echo "sha$alg sum" | sed 's/\s//g')
-  elif (echo "$arg" | grep -q '^-s..*'); then 
-    alg=$(echo "$arg" | sed 's/-s//g')
-    hashwith=$(echo "sha$alg sum" | sed 's/\s//g')
-  elif [ "$arg" == "--crypt" -o "$arg" == "-c" ]; then 
-    crypt=1
-    echo -n Password/phrase to use for encryption:\  >&2
-    read pass
-    key=$(echo "$pass" | sha512sum -b | base64 -w 0)
-    echo Sorry, this feature is not yet ready.
-    exit 1
-  elif [ "$arg" == "--targz" -o "$arg" == "-z" -o "$arg" == "--gzip" -o "$arg" == "--gz" ]; then 
-    uzipwith="tar -xzf"
-    zipwith="tar -czf"
-  elif [ "$arg" == "--tarbz" -o "$arg" == "-j" -o "$arg" == "--bzip" -o "$arg" == "--bz" ]; then 
-    uzipwith="tar -xjf"
-    zipwith="tar -cjf"
-  elif [ "$arg" == "--tarxz" -o "$arg" == "-x" -o "$arg" == "--xzip" -o "$arg" == "--xz" ]; then 
-    uzipwith="tar -xJf"
-    xz=1
-    zipwith="tar -cf"
-  elif [ "$arg" == "--info" -o "$arg" == "-i" -o "$arg" == "-l" -o "$arg" == "--list" ]; then 
-    stat=1
-    argisb=1
-  elif (echo "$arg" | grep -q '^-..*'); then 
-    echo "$(basename $0): invalid option $arg" >&2
-    exit 1
-  elif [ "$arg" == "--uuencode" -o "$arg" == "-e" ]; then 
-    encode=uuencode
-    echo Sorry, this feature is not yet ready. >&2
-    exit 1
-  else
-    files=`printf "$files\n$arg"`
-  fi
-done
-
-if [ -z "$1" -o "$1" == "--help" -o "$1" == "-h" ]; then 
+usage() {
   echo "Usage: $(basename $0) [OPTIONS] [FILES] > install_whatever.sh" 
   echo "Options: " 
-  echo "  -u, --uzipwith 'prog'	automatically unzip compressed files, with 'prog [OPT(S)]'" 
-  echo "                  	The script will attempt to unzip all of its files, so" 
-  echo "                	do not use this feature with any uncompressed files "
-  echo "  -e, --uuencode 	* use uuencode instead of base64 to create archives"
-  echo "  -f, --filesonly	don't preserve directory structure, just bundle files" 
-  echo "  -l, --list 'bundle'	list files in a bundle, accepts '-' or file as arg" 
-  echo "  -i, --info 'bundle'	* show info on files in a bundle, accepts '-' or file as arg" 
-  echo "  -n, --norecurse	don't recurse subdirectories " 
-  echo "  -sX, --shaX   	use shaXsum for file verification instead of $hashwith" 
-  echo "                	The sha* option prefers shaXsum, but can use \`shasum -a X' as well" 
-  echo "                	Example usage: --sha512, -s256. Both -s and -s1 will use sha1." 
-  echo "  -c, --crypt   	* encrypt files, interactively asks for password" 
-  echo "  -z, --targz   	compress files first with \`tar -czf', then bundle" 
-  echo "  -j, --tarbz   	compress files first with \`tar -cjf', then bundle" 
-  echo "  -x, --tarxz   	compress files first with \`tar -cf', then \`xz -ez9', then "
-  echo "                	bundle. This achieves maximum compression, but takes longer." 
-  echo "                	Files are extracted with \`tar -xJf'" 
-  echo "  -b, --makebat 	* create Windoze batch files, instead of bash scripts- cannot " 
-  echo "                	be used with other options, greatly reduced functionality." 
-  echo "  -d, --delete  	delete original files"
-  echo "  -v, --version 	print version information and exit" 
-  echo "  -h, --help    	print this help and exit" 
+  echo "  -u, --uzipwith <prog>  automatically unzip compressed files, with 'prog [OPT(S)]'" 
+  echo "                         The script will attempt to unzip all of its files, so" 
+  echo "                         do not use this feature with any uncompressed files "
+  echo "  -e, --uuencode         * use uuencode instead of base64 to create archives"
+  echo "  -f, --filesonly        don't preserve directory structure, just bundle files" 
+  echo "  -l, --list <bundle>    list files in a bundle, accepts '-' or file as arg" 
+  echo "  -i, --info <bundle>    * show info on files in a bundle, accepts '-' or file as arg" 
+  echo "  -n, --norecurse        don't recurse subdirectories " 
+  echo "  -sX, --shaX            use shaXsum for file verification instead of $hashwith" 
+  echo "                         The sha* option prefers shaXsum, but can use \`shasum -a X' as well" 
+  echo "                         Example usage: --sha512, -s256. Both -s and -s1 will use sha1." 
+  echo "  -c, --crypt            * encrypt files, interactively asks for password" 
+  echo "  -z, --targz            compress files first with \`tar -czf', then bundle" 
+  echo "  -j, --tarbz            compress files first with \`tar -cjf', then bundle" 
+  echo "  -x, --tarxz            compress files first with \`tar -cf', then \`xz -ez9', then "
+  echo "                         bundle. This achieves maximum compression, but takes longer." 
+  echo "                         Files are extracted with \`tar -xJf'" 
+  echo "  -b, --makebat          * create Windoze batch files, instead of bash scripts- cannot " 
+  echo "                         be used with other options, greatly reduced functionality." 
+  echo "  -d, --delete           delete original files"
+  echo "  -v, --version          print version information and exit" 
+  echo "  -h, --help             print this help and exit" 
   echo 
   echo "Note: Options with '*' are not yet implemented." 
   echo "Options CANNOT be specified like '-rzs', they must be like '-r -z -s'" 
@@ -100,7 +80,44 @@ if [ -z "$1" -o "$1" == "--help" -o "$1" == "-h" ]; then
   echo "know what programs the person executing the bundle has installed. For best results" 
   echo "when creating bundles for your own use, the author recommends the options '-s -z'." 
   exit 0
-fi
+}
+
+version() {
+  echo "$ver"
+  exit 0
+}
+
+badarg() {
+  echo "Unrecognized option '$1'"
+  echo "Use '$(basename $0) --help' for more information"
+  exit 0
+}
+
+# since this uses grep, it supports - as stdin, so you can use eg. `bundle file | bundle -l -' to test the script.
+list() {
+  if [[ -r "$1" ]]; then 
+    echo "Files in $1:" >&2
+    echo >&2
+    grep 'file=' "$1" | sed "s/.*file=//; s/;\sfi//; s/'//g; s/\"//g"
+    exit 0
+  fi
+}
+
+info() {
+  if [[ -r "$1" ]]; then 
+    echo "Files in $1:" >&2
+    echo >&2
+    grep 'file=' "$1" | sed "s/.*file=//; s/;\sfi//; s/'//g; s/\"//g"
+    exit 0
+  fi
+}
+
+crypt() {
+  echo "Sorry, this feature is not ready yet."
+  exit 1
+}
+
+getargs "$@"
 
 encode=${encode-base64}
 if ! test -x "`which $encode`" ; then 
@@ -108,16 +125,6 @@ if ! test -x "`which $encode`" ; then
   echo "We need this in order to continue." >&2
   exit 1
 fi
-
-
-if [ "$stat" == "1" -a -n "$bundle" ]; then # since this uses grep, it supports - as stdin, so you can use eg. `bundle file | bundle -l -' to test bundle.
-  echo "Files in $bundle:" >&2
-  echo >&2
-  grep 'file=' "$bundle" | sed 's/.*file=//' | sed 's/;\sfi//' | sed "s/'//g" | sed 's/"//g'
-  echo >&2
-  exit 0
-fi
-
 
 hashwith=${hashwith-md5sum}
 if ! test -x "`which $hashwith`"; then
@@ -227,9 +234,7 @@ for file in "${filesarr[@]}"; do
   echo "$uzipdo"
   echo "# END FILE -- \`$filedir/$file\`"
   echo 
-  if [ -n "$rmfiles" -a "$rmfiles" == "1" ]; then 
-    rm $ofiledir/$file
-  fi
+  [[ $rmfiles == 1 ] && rm "$ofiledir/$file"
 done
 
 echo "echo "
