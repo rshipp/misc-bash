@@ -3,40 +3,49 @@
 # create a self-extracting shell script that can install any file(s).
 # Usage: bundle [OPTIONS] [FILES] > install_whatever.sh
 ver="george's bundle 0.9.2"
+b="$(basename $0)"
+presdirs=1
+encode=base64
+
+main() {
+  getargs "$@"
+  check
+  bundle
+}
 
 getargs() {
   while [[ "$1" != "" ]]; do
     case "$1" in
-      "-u"|"--unzipwith") shift; uzipwith="$1";;
-      "-f"|"--filesonly"|"--basename") presdirs=0;;
-      "-h"|"--help") usage;;
-      "-v"|"--version") echo "$ver"; exit 0;;
-      "-n"|"--norecurse") recurse=0;;
-      "-s"|"--sha"|"-s1"|"--sha1") hashwith=sha1sum;;
-      "--sha"*) alg=$(echo "$1" | sed 's/--sha//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
-      "-s"*) alg=$(echo "$1" | sed 's/-s//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
-      "-c"|"--crypt") crypt;;
-      "-z"|"--gz"|"--targz"|"--gzip") uzipwith="tar -xzf" zipwith="tar -czf";;
-      "-j"|"--bz"|"--tarbz"|"--bzip") uzipwith="tar -xjf" zipwith="tar -cjf";;
+      "-u"|"--unzipwith")                  shift; uzipwith="$1";;
+      "-f"|"--filesonly"|"--basename")     presdirs=0;;
+      "-h"|"--help")                       usage;;
+      "-v"|"--version")                    echo "$ver"; exit 0;;
+      "-n"|"--norecurse")                  recurse=0;;
+      "-s"|"--sha"|"-s1"|"--sha1")         hashwith=sha1sum;;
+      "--sha"*)                            alg=$(echo "$1" | sed 's/--sha//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "-s"*)                               alg=$(echo "$1" | sed 's/-s//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "-c"|"--crypt")                      crypt;;
+      "-z"|"--gz"|"--targz"|"--gzip")      uzipwith="tar -xzf" zipwith="tar -czf";;
+      "-j"|"--bz"|"--tarbz"|"--bzip")      uzipwith="tar -xjf" zipwith="tar -cjf";;
       "-x"|"-J"|"--xz"|"--tarxz"|"--xzip") uzipwith="tar -xJf" xz=1 zipwith="tar -cf";;
-      "-i"|"--info") shift; info "$1";;
-      "-l"|"-t"|"--list") shift; list "$1";;
-      "-e"|"--uuencode") encode=uuencode; echo Sorry, this feature is not yet ready. >&2; exit 1;;
-      "-d"|"--delete") rmfiles=1;;
-      "-"*) echo "Unrecognized option '$1'"; echo "Use '$(basename $0) --help' for more information"; exit 1;;
-      *) files="$(printf "$files\n$1")"
+      "-i"|"--info")                       shift; info "$1";;
+      "-l"|"-t"|"--list")                  shift; list "$1";;
+      "-e"|"--uuencode")                   encode=uuencode;;
+      "-d"|"--delete")                     rmfiles=1;;
+      "-"*) echo "Unrecognized option '$1'"; echo "Use '$b --help' for more information"; exit 1;;
+      *)    files="$(printf "$files\n$1")"
     esac
   shift
   done
 }
 
 usage() {
-  echo "Usage: $(basename $0) [OPTIONS] [FILES] > install_whatever.sh" 
+  echo "Usage: $b [OPTIONS] [FILES] > install_whatever.sh" 
   echo "Options: " 
   echo "  -u, --uzipwith <prog>  automatically unzip compressed files, with 'prog [OPT(S)]'" 
   echo "                         The script will attempt to unzip all of its files, so" 
   echo "                         do not use this feature with any uncompressed files "
-  echo "  -e, --uuencode         * use uuencode instead of base64 to create archives"
+  echo "  -e, --uuencode         use uuencode instead of base64 to create archives"
   echo "  -f, --filesonly        don't preserve directory structure, just bundle files" 
   echo "  -l, --list <bundle>    list files in a bundle, accepts '-' or file as arg" 
   echo "  -i, --info <bundle>    * show info on files in a bundle, accepts '-' or file as arg" 
@@ -88,126 +97,128 @@ crypt() {
   exit 1
 }
 
-getargs "$@"
-
-encode=${encode-base64}
-if ! test -x "`which $encode`" ; then 
-  echo "Sorry, no $encode executable was found." >&2
-  echo "We need this in order to continue." >&2
-  exit 1
-fi
-
-hashwith=${hashwith-md5sum}
-if ! test -x "`which $hashwith`"; then
-  if ! test -x "`which shasum`"; then
-    echo "$hashwith cannot be found - exiting" >&2
+check() {
+  encode=${encode-base64}
+  if [[ ! -x "$(which $encode)" ]]; then 
+    echo "Sorry, no $encode executable was found." >&2
+    echo "We need this in order to continue." >&2
     exit 1
-  elif [ -n "$alg" ]; then
-    if [ "$alg" == "1" -o "$alg" == "224" -o "$alg" == "256" -o "$alg" == "384" -o "$alg" == "512" -o "$alg" == "512224" -o "$alg" == "512256" ]; then 
-      echo "$(basename $0): $hashwith cannot be found, using 'shasum -a $alg' instead" >&2
-      echo "$(basename $0): This may cause problems; be warned!" >&2
-      echo -n "$(basename $0): Continuing in 3... " >&2; sleep 1; echo -n "2... " >&2; sleep 1; echo -n "1... " >&2; sleep 1; echo "0" >&2
-      hashwith="shasum -a $alg"
+  fi
+
+  hashwith=${hashwith-md5sum}
+  if [[ ! -x "$(which $hashwith)" ]]; then
+    if [[ ! -x "$(which shasum)" ]]; then
+      echo "$hashwith cannot be found, quitting." >&2
+      exit 1
+    elif [[ -n $alg ]]; then
+      if [[ $alg == 1 || $alg == 224 || $alg == 256 || $alg == 384 || $alg == 512 || $alg == 512224 || $alg == 512256 ]]; then 
+        echo "$b: $hashwith cannot be found, using 'shasum -a $alg' instead" >&2
+        echo "$b: This may cause problems; be warned!" >&2
+        hashwith="shasum -a $alg"
+      else
+        echo "$b: Invalid algorithm $alg, quitting." >&2
+        exit 1
+      fi
     else
-      echo "$(basename $0): Invalid algorithm $alg, quitting" >&2
+      echo '$b: unknown error, $alg empty!' >&2
+      echo '$b: is the md5sum executable missing?' >&2
       exit 1
     fi
-  else
-    echo "$(basename $0): unknown error, \$alg empty!" >&2
-    echo "$(basename $0): is the md5sum executable missing?" >&2
+  fi
+}
+
+bundle() {
+  if [[ -n $files ]]; then 
+    echo '#!/bin/bash'
+    echo "# $ver self-extracting archive."
+    echo '# Usage: "sh thisscript", or "sh thisscript /install/to/this/dir"'
+    echo "if ! test -x \"\`which $encode\`\"; then echo Sorry, no $encode executable was found. >&2; echo We need this in order to continue. >&2; exit 1; fi"
+    echo 'dir=${1-.}'
+    echo 'if test -d "$dir"; then echo directory $dir exists, starting extraction...; elif test -r "$dir"; then echo $dir is a file, but needs to be a folder; exit 1; else echo creating directory $dir ...; mkdir -p "$dir"; fi'
+    if [[ -n $uzipwith ]]; then 
+      echo "$b: this script will extract files with '$uzipwith'" >&2
+      echo "$b: note that the person running the bundled script will need this program" >&2
+      echo "# This script will use '$uzipwith' to extract files. You must have this program installed."
+    fi
+    echo "integerr=0"
+  else 
+    echo "$b: No files specified, nothing to do." >&2
     exit 1
   fi
-fi
 
-if [ -n "$files" -o "$files" == " " ]; then 
-  echo '#!/bin/bash'
-  echo "# $ver self-extracting archive."
-  echo "# Usage: \`thisscript', or \`thisscript /install/to/this/dir'"
-  echo "if ! test -x \"\`which $encode\`\"; then echo Sorry, no $encode executable was found. >&2; echo We need this in order to continue. >&2; exit 1; fi"
-  echo 'dir=${1-.}'
-  echo "if test -d \"\$dir\"; then echo directory \'\$dir\' exists, starting extraction...; elif test -r \"\$dir\"; then echo \$dir is a file, but needs to be a folder; exit 1; else echo creating directory \'\$dir\' ...; mkdir -p \"\$dir\"; fi"
-  if [ -n "$uzipwith" ]; then 
-    echo "$(basename $0): this script will extract files with '$uzipwith'" >&2
-    echo "$(basename $0): note that the person running the bundled script will need this program" >&2
-    echo "# This script will use '$uzipwith' to extract files. You must have this program installed."
-  fi
-  echo "integerr=0"
-else 
-  echo "$(basename $0): No files specified, nothing to do." >&2
-  exit 1
-fi
-
-if [ -n "$zipwith" ]; then
-  echo "$(basename $0): Compressing files first with '$zipwith'... " >&2
-  now=$(date +%s)
-  tempar="/tmp/bundle-${BASHPID-0}.$now"
-  $zipwith $tempar $files
-  if [ -n "$xz" -a "$xz" == "1" ]; then
-    echo "$(basename $0): Compressing files with 'xz -ez9'... " >&2
-    xz -ez9 $tempar -c > $tempar.tar.xz
-    rm $tempar
-    tempar=$tempar.tar.xz
-  fi
-  files="$tempar"
-  rmfiles=1
-  presdirs=0
-  echo "$(basename $0): Creating bundle..." >&2
-fi
-
-newline='
-'
-IFS="$newline"
-if [ "$recurse" != "0" ]; then
-  filesarr=($(find $files))
-else 
-  filesarr=($files)
-fi
-for file in "${filesarr[@]}"; do 
-  if [ -z "$uzipwith" ]; then 
-    uzipdo="# "
-  else
-    IFS=' '
-    uzipdo="echo unzipping \$file with \'$uzipwith\'; owd=\"\$(pwd)\"; cd \"\$dir\"; $uzipwith \"./\$file\"; echo removing \$file ...; rm \"./\$file\"; cd \"\$owd\""
-    IFS="$newline"
-  fi
-  if test -d "$file"; then
-    echo "echo creating directory \$dir/$file"
-    echo "mkdir -p \"\$dir/$file\""
-    continue
-  elif test -r "$file"; then
-    fileperm="$(stat -c %a $file)"
-    IFS=' '
-    filesum=$($hashwith -b $file | awk '{printf $1}')
-    IFS="$newline"
-    filedir="$(dirname $file | sed 's@^/@@')"
-    ofiledir="$(dirname $file)"
-    filecont="$($encode -w 100 $file)"
-    file="$(basename $file)"
-  else
-    echo "$(basename $0): $file does not exist or is not readable." >&2
+  if [[ -n $zipwith ]]; then
+    echo "$b: Compressing files first with '$zipwith'... " >&2
+    now=$(date +%s)
+    tempar="/tmp/bundle-${BASHPID-0}.$now"
+    $zipwith $tempar $files
+    if [[ $xz == 1 ]]; then
+      echo "$b: Compressing files with 'xz -ez9'... " >&2
+      xz -ez9 $tempar
+      tempar=$tempar.tar.xz
+    fi
+    files="$tempar"
+    rmfiles=1
+    presdirs=0
+    echo "$b: Creating bundle..." >&2
   fi
 
-  echo "# START FILE -- \`$filedir/$file\`"
-  if [ -z "$presdirs" -o "$presdirs" != "0" ]; then 
-    echo "if test -d \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" exists ...; file='$filedir/$file'; elif test -r \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" is a file, but needs to be a folder; exit 1; else echo creating \$dir/$filedir; mkdir -p \$dir/$filedir; file='$filedir/$file'; fi"
+  newline=$'\n'
+  IFS="$newline"
+  if [ "$recurse" != "0" ]; then
+    filesarr=($(find $files))
   else 
-    echo "file=\"$file\""
+    filesarr=($files)
   fi
-  echo "echo extracting \$dir/\$file ..."
-  echo "$encode -d << EOF > \"\$dir/\$file\""
-  echo "$filecont"
-  echo "EOF"
-  echo "echo setting permissions on \$dir/\$file to $fileperm ..."
-  echo "chmod $fileperm \"\$dir/\$file\""
-  echo "echo -n checking \$dir/\$file file integrity \($hashwith\) ...\ "
-  echo "filesum=\$($hashwith -b \"\$dir/\$file\" | awk '{printf \$1}')"
-  echo "if [ \"\$filesum\" == \"$filesum\" ]; then echo looks like \$dir/\$file is ok.; else echo looks like \$dir/\$file is corrupted.; let integerr=\$integerr+1; fi"
-  echo "$uzipdo"
-  echo "# END FILE -- \`$filedir/$file\`"
-  echo 
-  [[ $rmfiles == 1 ] && rm "$ofiledir/$file"
-done
+  for file in "${filesarr[@]}"; do 
+    if [[ -z $uzipwith ]]; then 
+      uzipdo="# "
+    else
+      IFS=' '
+      uzipdo="echo unzipping \$file with \'$uzipwith\'; owd=\"\$(pwd)\"; cd \"\$dir\"; $uzipwith \"./\$file\"; echo removing \$file ...; rm \"./\$file\"; cd \"\$owd\""
+      IFS="$newline"
+    fi
+    if test -d "$file"; then
+      echo "echo creating directory \$dir/$file"
+      echo "mkdir -p \"\$dir/$file\""
+      continue
+    elif test -r "$file"; then
+      fileperm="$(stat -c %a "$file")"  fileowner="$(stat -c %u "$file")"
+      fileatime="$(stat -c %x "$file")" filemtime="$(stat -c %y "$file")"
+      IFS=' '           filesum=$($hashwith -b $file | awk '{printf $1}')
+      IFS="$newline"    filedir="$(dirname $file | sed 's@^/@@')"
+      ofiledir="$(dirname $file)"
+      [[ $encode == "base64" ]] && filecont="$(base64 -w 100 "$file")"
+      [[ $encode == "uuencode" ]] && filecont="$(uuencode "$file" -)"
+      file="$(basename $file)"
+    else
+      echo "$b: $file does not exist or is not readable." >&2
+    fi
+  
+    echo "# START FILE -- \`$filedir/$file\`"
+    if [[ $presdirs == 1 ]]; then 
+      echo "if test -d \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" exists ...; file='$filedir/$file'; elif test -r \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" is a file, but needs to be a folder; exit 1; else echo creating \$dir/$filedir; mkdir -p \$dir/$filedir; file='$filedir/$file'; fi"
+    else 
+      echo "file='$file'"
+    fi
+    echo "echo extracting \$dir/\$file ..."
+    [[ $encode == "base64" ]] && echo 'base64 -d << EOF > "$dir/$file"'
+    [[ $encode == "uuencode" ]] && echo 'uudecode << EOF > "$dir/$file"'
+    echo "$filecont"
+    echo "EOF"
+    echo "echo setting permissions on \$dir/\$file to $fileperm ..."
+    echo "chmod $fileperm \"\$dir/\$file\""
+    echo "echo -n checking \$dir/\$file file integrity \($hashwith\) ...\ "
+    echo "filesum=\$($hashwith -b \"\$dir/\$file\" | awk '{printf \$1}')"
+    echo "if [ \"\$filesum\" == \"$filesum\" ]; then echo looks like \$dir/\$file is ok.; else echo looks like \$dir/\$file is corrupted.; let integerr=\$integerr+1; fi"
+    echo "$uzipdo"
+    echo "# END FILE -- \`$filedir/$file\`"
+    echo 
+    [[ $rmfiles == 1 ]] && rm "$ofiledir/$file"
+  done
+  
+  echo "echo "
+  echo "echo Extraction complete."
+  echo "echo File verification errors: \$integerr "
+}
 
-echo "echo "
-echo "echo Extraction complete."
-echo "echo File verification errors: \$integerr "
+main "$@"
