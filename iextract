@@ -28,6 +28,7 @@ ex () {
       *.sh)        ./$1         ;;
       *.run)       sudo ./$1    ;;
       *.tar.*)     tar xaf $1   ;;
+      *.deb|*.rpm) 7z x $1      ;;
       *)           echo "'$1' cannot be extracted via ex()" ;;
     esac
   else
