@@ -3,10 +3,10 @@ This is just a small collection of bash scripts I find useful. Use them or not, 
 ##Descriptions: 
 
 #bundle 
-My version of the traditional 'bundle' shell script, similar to GNU 'shar'. Includes built-in file integrity checking; can use tar, xz, gzip, etc; creates a plain-text shell script 'archive' that can be used to transport files of any type, and more. See README.bundle.
+My version of the traditional 'bundle' shell script, similar to GNU 'shar'. Includes built-in file integrity checking; can use tar, xz, gzip, etc; creates a plain-text, self-extracting shell script 'archive' that can be used to transport files of any type; and more. See README.bundle.
 
 #countdown
-A simple 'for' loop that counts down from any numerical value specified as an argument to the script.
+A simple 'for' loop that counts down in seconds from any numerical value specified as an argument to the script.
 
 #iextract
 Download and extract archives of almost any type, including tarballs, zips, etc.

@@ -1,6 +1,6 @@
 #!/bin/bash
 # my version of the `bundle' shell script (similar to GNU shar). 
-# create a self-extracting shell script that can install any file(s).
+# create a self-extracting shell archive that can install any file(s).
 # Usage: bundle [OPTIONS] [FILES] > install_whatever.sh
 ver="george's bundle 0.9.2"
 b="$(basename $0)"
