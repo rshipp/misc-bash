@@ -161,17 +161,18 @@ bundle() {
     if [[ $xz == 1 ]]; then
       echo "$b: Compressing files with 'xz -ez9'... " >&2
       xz -ez9 $tempar
-      tempar=$tempar.tar.xz
+      tempar=$tempar.xz
     fi
     files="$tempar"
     rmfiles=1
     presdirs=0
+    recurse=0
     echo "$b: Creating bundle..." >&2
   fi
 
   newline=$'\n'
   IFS="$newline"
-  if [ "$recurse" != "0" ]; then
+  if [[ $recurse != 0 ]]; then
     filesarr=($(find $files))
   else 
     filesarr=($files)
