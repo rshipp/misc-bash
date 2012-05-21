@@ -1,0 +1,16 @@
+#!/bin/bash
+# a colorful wrapper for clamscan
+
+RED='[1;31m'
+GREEN='[1;32m'
+BLUE='[1;34m'
+ENDCOLOR='[0m'
+
+clamscan "$@" | 
+  sed "
+    s/: OK$/: ${GREEN}OK${ENDCOLOR}/; 
+    s/: \(.*\) FOUND$/: ${RED}\1 FOUND${ENDCOLOR}/;
+    s/: Symbolic link/: ${BLUE}Symbolic link${ENDCOLOR}/;
+    s/^Infected files: 0$/${GREEN}Infected files: 0${ENDCOLOR}/;
+    s/^Infected files: \([^0].*\)$/${RED}Infected files: \1${ENDCOLOR}/;
+  "
