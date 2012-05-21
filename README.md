@@ -5,8 +5,14 @@ This is just a small collection of bash scripts I find useful. Use them or not, 
 #bundle 
 My version of the traditional 'bundle' shell script, similar to GNU 'shar'. Includes built-in file integrity checking; can use tar, xz, gzip, etc; creates a plain-text, self-extracting shell script 'archive' that can be used to transport files of any type; and more. See README.bundle.
 
+#clamcolor
+A colorized wrapper for clamscan, in bash.
+
 #countdown
 A simple 'for' loop that counts down in seconds from any numerical value specified as an argument to the script.
+
+#eicargen
+As its name suggests, this tiny bash script generates an eicar AV test file.
 
 #iextract
 Download and extract archives of almost any type, including tarballs, zips, etc.
