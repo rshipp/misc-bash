@@ -25,7 +25,8 @@ or alternative to tar, but if you want to create a self-extracting,
 plaintext archive with built-in integrity checking and several
 other useful features, bundle is the way to go. In addition, bundle
 can utilize tar, gzip, bzip, and xz when creating archives, just as
-tar can. 
+tar can. Additionally, bundle can send the scripts it creates directly
+to a pastebin, and return a url to the paste.
 
  Todo:
 Get rid of the current argument stuff, and replace it with getargs.sh
