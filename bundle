@@ -203,7 +203,7 @@ bundle() {
   if [[ -n $files ]]; then
     header
   else 
-    print "$b: No files specified, nothing to do." >&2
+    echo "$b: No files specified, nothing to do." >&2
     exit 1
   fi
 
@@ -283,6 +283,12 @@ bundle() {
   print "echo File verification errors: \$integerr "
 
   if [[ $paste == 1 ]]; then
+    pbsize=$(stat -c %s "/tmp/pbundle-${BASHPID}${UID}.sh")
+    if [[ $pbsize -ge 3145728 ]]; then
+      echo "$b: That bundle is too large, declining to paste." >&2
+      rm -f "/tmp/pbundle-${BASHPID}${UID}.sh"
+      exit 1
+    fi
     if paste "/tmp/pbundle-${BASHPID}${UID}.sh"; then
       rm -f "/tmp/pbundle-${BASHPID}${UID}.sh"
     else
