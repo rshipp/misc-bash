@@ -2,10 +2,11 @@
 # my version of the `bundle' shell script (similar to GNU shar). 
 # create a self-extracting shell archive that can install any file(s).
 # Usage: bundle [OPTIONS] [FILES] > install_whatever.sh
-ver="george's bundle 0.9.2"
+ver="george's bundle 0.9.3"
 b="$(basename $0)"
 presdirs=1
 encode=base64
+PASTETO="${PASTETO-http://paste.chakra-project.org/}"
 
 main() {
   getargs "$@"
@@ -22,8 +23,10 @@ getargs() {
       "-v"|"--version")                    echo "$ver"; exit 0;;
       "-n"|"--norecurse")                  recurse=0;;
       "-s"|"--sha"|"-s1"|"--sha1")         hashwith=sha1sum;;
-      "--sha"*)                            alg=$(echo "$1" | sed 's/--sha//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
-      "-s"*)                               alg=$(echo "$1" | sed 's/-s//g') hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "--sha"*)                            alg=$(echo "$1" | sed 's/--sha//g') 
+                                           hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
+      "-s"*)                               alg=$(echo "$1" | sed 's/-s//g') 
+                                           hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
       "-c"|"--crypt")                      crypt;;
       "-z"|"--gz"|"--targz"|"--gzip")      uzipwith="tar -xzf" zipwith="tar -czf";;
       "-j"|"--bz"|"--tarbz"|"--bzip")      uzipwith="tar -xjf" zipwith="tar -cjf";;
@@ -32,6 +35,9 @@ getargs() {
       "-l"|"-t"|"--list")                  shift; list "$1";;
       "-e"|"--uuencode")                   encode=uuencode;;
       "-d"|"--delete")                     rmfiles=1;;
+      "-p"|"--paste")                      paste=1;;
+      "-o"|"--output")                     tofile=1; shift; saveas="$1";
+                                           [[ -e "$saveas" ]] && echo "$b: output file '$saveas' already exists, not overwriting." && exit 1;;
       "-"*) echo "Unrecognized option '$1'"; echo "Use '$b --help' for more information"; exit 1;;
       *)    files="$(printf "$files\n$1")"
     esac
@@ -59,6 +65,10 @@ usage() {
   echo "                         \`shasum -a X' as well. Example usage: --sha512, -s256"
   echo "                         Both -s and -s1 will use sha1." 
   echo
+  echo "Redirect output:"
+  echo "  -p, --paste            instead of sending to stdout, send to $PASTETO"
+  echo "  -o, --output <file>    instead of sending to stdout, save to <file>"
+  echo
   echo "Other:"
   echo "  -b, --makebat          * create Windoze batch files, instead of bash scripts-"
   echo "  -c, --crypt            * encrypt files with gpg (public/private key)"
@@ -68,19 +78,20 @@ usage() {
   echo "  -i, --info <bundle>    * show info on files in a bundle (use '-' for stdin)"
   echo "  -l, --list <bundle>    list files in a bundle, accepts '-' or file as arg"
   echo "  -n, --norecurse        don't recurse subdirectories "
-  echo "                         cannot be used with other options." 
-  echo "  -h, --help             print this help and exit" 
-  echo "  -v, --version          print version information and exit" 
+  echo "                         cannot be used with other options."
+  echo "  -h, --help             print this help and exit"
+  echo "  -v, --version          print version information and exit"
 
-  echo 
-  echo "Note: Options with '*' are not yet implemented." 
-  echo "Options CANNOT be specified like '-rzs', they must be like '-r -z -s'" 
-  echo "The default function (no options) is simplest, and best for using when you do"
-  echo "not know what programs the person executing the bundle has installed. "
+  echo
+  echo "Note: Options with '*' are not yet implemented."
+  echo "Options CANNOT be specified like '-rzs', they must be like '-r -z -s'"
+  echo "The default function (no options) is simplest, and best for using when you"
+  echo "don't know what programs the person executing the bundle has installed."
   exit 0
 }
 
-# since this uses grep, it supports - as stdin, so you can use eg. `bundle file | bundle -l -' to test the script.
+# since this uses grep, it supports - as stdin, so you can use eg. 
+# `bundle file | bundle -l -' to test the script.
 list() {
   if [[ -r "$1" ]]; then 
     echo "Files in $1:" >&2
@@ -127,29 +138,72 @@ check() {
         exit 1
       fi
     else
-      echo '$b: unknown error, $alg empty!' >&2
-      echo '$b: is the md5sum executable missing?' >&2
+      echo "$b: unknown error, $alg empty!" >&2
+      echo "$b: is the md5sum executable missing?" >&2
       exit 1
     fi
   fi
 }
 
-bundle() {
-  if [[ -n $files ]]; then 
-    echo '#!/bin/bash'
-    echo "# $ver self-extracting archive."
-    echo '# Usage: "sh thisscript", or "sh thisscript /install/to/this/dir"'
-    echo "if ! test -x \"\`which $encode\`\"; then echo Sorry, no $encode executable was found. >&2; echo We need this in order to continue. >&2; exit 1; fi"
-    echo 'dir=${1-.}'
-    echo 'if test -d "$dir"; then echo directory $dir exists, starting extraction...; elif test -r "$dir"; then echo $dir is a file, but needs to be a folder; exit 1; else echo creating directory $dir ...; mkdir -p "$dir"; fi'
-    if [[ -n $uzipwith ]]; then 
-      echo "$b: this script will extract files with '$uzipwith'" >&2
-      echo "$b: note that the person running the bundled script will need this program" >&2
-      echo "# This script will use '$uzipwith' to extract files. You must have this program installed."
+print() {
+  if [[ $paste == 1 ]]; then
+    echo "$@" >> "/tmp/pbundle-${BASHPID}${UID}.sh"
+  elif [[ $tofile == 1 ]]; then
+    [[ -e "$saveas" ]] || touch "$saveas" 2>/dev/null
+    if [[ -w "$saveas" ]]; then
+      echo "$@" >> "$saveas"
+    else
+      echo "$b: Output file '$saveas' is not writable."
+      exit 1
     fi
-    echo "integerr=0"
+  else
+    echo "$@"
+  fi
+}
+
+paste() {
+  echo "$b: Pasting bundle to $PASTETO..." >&2
+  curl -sS --data-urlencode "paste_data=$(cat "$1")" \
+           --data-urlencode "paste_lang=bash" \
+           --data-urlencode "api_submit=true" \
+           --data-urlencode "mode=json" \
+           --data-urlencode "paste_user=$ver" \
+           --data-urlencode "paste_expire=8640" \
+           "${PASTETO}" | grep '"id"' | sed "s,.*\".*\":\s*\"\(.*\)\".*,$b: $PASTETO\1,"
+}
+
+header() {
+  print '#!/bin/bash'
+  print "# $ver self-extracting archive."
+  print '# Usage: "sh thisscript", or "sh thisscript /install/to/this/dir"'
+  print "if ! test -x \"\`which $encode\`\"; then"
+  print "  echo 'Sorry, no $encode executable was found.' >&2"
+  print "  echo 'We need this in order to continue.' >&2"
+  print "  exit 1"
+  print "fi"
+  print 'dir=${1-.}'
+  print 'if [[ -d "$dir" ]]; then'
+  print '  echo "directory $dir exists, starting extraction..."'
+  print 'elif [[ -r "$dir" ]]; then'
+  print '  echo "$dir is a file, but needs to be a folder."'
+  print '  exit 1'
+  print 'else'
+  print '  echo "creating directory $dir ..."'
+  print '  install -dm755 "$dir"'
+  print 'fi'
+  if [[ -n $uzipwith ]]; then 
+    echo "$b: this script will extract files with '$uzipwith'" >&2
+    echo "$b: note that the person running the bundled script will need this program" >&2
+    print "# This script will use '$uzipwith' to extract files. You must have this program installed."
+  fi
+  print "integerr=0"
+}
+
+bundle() {
+  if [[ -n $files ]]; then
+    header
   else 
-    echo "$b: No files specified, nothing to do." >&2
+    print "$b: No files specified, nothing to do." >&2
     exit 1
   fi
 
@@ -185,11 +239,11 @@ bundle() {
       uzipdo="echo unzipping \$file with \'$uzipwith\'; owd=\"\$(pwd)\"; cd \"\$dir\"; $uzipwith \"./\$file\"; echo removing \$file ...; rm \"./\$file\"; cd \"\$owd\""
       IFS="$newline"
     fi
-    if test -d "$file"; then
-      echo "echo creating directory \$dir/$file"
-      echo "mkdir -p \"\$dir/$file\""
+    if [[ -d $file ]]; then
+      print "echo creating directory \$dir/$file"
+      print "mkdir -p \"\$dir/$file\""
       continue
-    elif test -r "$file"; then
+    elif [[ -r $file ]]; then
       fileperm="$(stat -c %a "$file")"  fileowner="$(stat -c %u "$file")"
       fileatime="$(stat -c %x "$file")" filemtime="$(stat -c %y "$file")"
       IFS=' '           filesum=$($hashwith -b $file | awk '{printf $1}')
@@ -202,31 +256,41 @@ bundle() {
       echo "$b: $file does not exist or is not readable." >&2
     fi
   
-    echo "# START FILE -- \`$filedir/$file\`"
-    if [[ $presdirs == 1 ]]; then 
-      echo "if test -d \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" exists ...; file='$filedir/$file'; elif test -r \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" is a file, but needs to be a folder; exit 1; else echo creating \$dir/$filedir; mkdir -p \$dir/$filedir; file='$filedir/$file'; fi"
-    else 
-      echo "file='$file'"
+    print "# START FILE -- \`$filedir/$file\`"
+    if [[ $presdirs == 1 ]]; then
+      print "if test -d \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" exists ...; file='$filedir/$file'; elif test -r \"\$dir/$filedir\"; then echo \"\$dir/$filedir\" is a file, but needs to be a folder; exit 1; else echo creating \$dir/$filedir; mkdir -p \$dir/$filedir; file='$filedir/$file'; fi"
+    else
+      print "file='$file'"
     fi
-    echo "echo extracting \$dir/\$file ..."
-    [[ $encode == "base64" ]] && echo 'base64 -d << EOF > "$dir/$file"'
-    [[ $encode == "uuencode" ]] && echo 'uudecode << EOF > "$dir/$file"'
-    echo "$filecont"
-    echo "EOF"
-    echo "echo setting permissions on \$dir/\$file to $fileperm ..."
-    echo "chmod $fileperm \"\$dir/\$file\""
-    echo "echo -n checking \$dir/\$file file integrity \($hashwith\) ...\ "
-    echo "filesum=\$($hashwith -b \"\$dir/\$file\" | awk '{printf \$1}')"
-    echo "if [ \"\$filesum\" == \"$filesum\" ]; then echo looks like \$dir/\$file is ok.; else echo looks like \$dir/\$file is corrupted.; let integerr=\$integerr+1; fi"
-    echo "$uzipdo"
-    echo "# END FILE -- \`$filedir/$file\`"
-    echo 
+    print "echo extracting \$dir/\$file ..."
+    [[ $encode == "base64" ]] && print 'base64 -d << EOF > "$dir/$file"'
+    [[ $encode == "uuencode" ]] && print 'uudecode << EOF > "$dir/$file"'
+    print "$filecont"
+    print "EOF"
+    print "echo setting permissions on \$dir/\$file to $fileperm ..."
+    print "chmod $fileperm \"\$dir/\$file\""
+    print "echo -n checking \$dir/\$file file integrity \($hashwith\) ...\ "
+    print "filesum=\$($hashwith -b \"\$dir/\$file\" | awk '{printf \$1}')"
+    print "if [ \"\$filesum\" == \"$filesum\" ]; then echo looks like \$dir/\$file is ok.; else echo looks like \$dir/\$file is corrupted.; let integerr=\$integerr+1; fi"
+    print "$uzipdo"
+    print "# END FILE -- \`$filedir/$file\`"
+    print ""
     [[ $rmfiles == 1 ]] && rm "$ofiledir/$file"
   done
   
-  echo "echo "
-  echo "echo Extraction complete."
-  echo "echo File verification errors: \$integerr "
+  print "echo "
+  print "echo Extraction complete."
+  print "echo File verification errors: \$integerr "
+
+  if [[ $paste == 1 ]]; then
+    if paste "/tmp/pbundle-${BASHPID}${UID}.sh"; then
+      rm -f "/tmp/pbundle-${BASHPID}${UID}.sh"
+    else
+      echo "$b: Pasting failed." >&2
+      rm -f "/tmp/pbundle-${BASHPID}${UID}.sh"
+      exit 1
+    fi
+  fi
 }
 
 main "$@"
