@@ -21,6 +21,10 @@ specified as an argument to the script.
 As its name suggests, this tiny bash script generates an eicar AV test
 file.
 
+#hg
+help | grep
+Usage: hg [executable] [string to grep for]
+
 #iextract
 Download and extract archives of almost any type, including tarballs,
 zips, etc.
