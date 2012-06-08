@@ -4,5 +4,5 @@ if [[ -z "$1" || -z "$2" ]]; then
   exit 1
 else 
   p=$(which $1)
-  [[ -z "$p" ]] && exit 1 || $p --help | grep -i "$2"
+  [[ -z "$p" ]] && exit 1 || $p --help | grep -i \\"$2"
 fi
