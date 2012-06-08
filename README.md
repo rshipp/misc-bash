@@ -23,6 +23,7 @@ file.
 
 #hg
 help | grep
+
 Usage: hg [executable] [string to grep for]
 
 #iextract
