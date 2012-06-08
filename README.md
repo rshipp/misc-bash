@@ -4,17 +4,17 @@ or not, in whatever way you wish.
 ##Descriptions: 
 
 #bundle 
-My version of the traditional 'bundle' shell script, similar to GNU
-'shar'. Includes built-in file integrity checking; can use tar, xz,
+My version of the traditional `bundle` shell script, similar to GNU
+`shar`. Includes built-in file integrity checking; can use tar, xz,
 gzip, etc; creates a plain-text, self-extracting shell script
-'archive' that can be used to transport files of any type; and more.
+"archive" that can be used to transport files of any type; and more.
 See README.bundle.
 
 #clamcolor
 A colorized wrapper for clamscan, in bash.
 
 #countdown
-A simple 'for' loop that counts down in seconds from any numerical value
+A simple `for` loop that counts down in seconds from any numerical value
 specified as an argument to the script.
 
 #eicargen
@@ -32,11 +32,11 @@ zips, etc.
 
 #thinkgeek_fortunes
 A silly script that pulls fortunes from the ThinkGeek fortunes page, and
-creates a 'fortune' database out of them. Requires the 'convmv', 'hd2u',
-and 'fortune-mod' packages. 
+creates a `fortune` database out of them. Requires the `convmv`, `hd2u`,
+and `fortune-mod` packages.
 
 #rb
-A simple but ever-so-useful 1-liner that deletes files with the '~'
+A simple but ever-so-useful 1-liner that deletes files with the "~"
 backup extension used by Kate and Kwrite.
 
 #recycle, saferm, and unrm
@@ -46,8 +46,8 @@ to make these.
 
 #s
 Run apps like kate, dolphin, etc that make a lot of noise and do not
-detatch from the shell with: 's someprogram --options'
+detatch from the shell with: `s someprogram --options`
 
 #writelog
 A 2-second script that makes it a little easier to see what files a
-process opens and/or writes to. Requires 'strace'.
+process opens and/or writes to. Requires `strace`.
