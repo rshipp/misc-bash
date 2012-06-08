@@ -11,7 +11,7 @@ gzip, etc; creates a plain-text, self-extracting shell script
 See README.bundle.
 
 #clamcolor
-A colorized wrapper for clamscan, in bash.
+A simple colorized wrapper for clamscan, written in bash.
 
 #countdown
 A simple `for` loop that counts down in seconds from any numerical value
