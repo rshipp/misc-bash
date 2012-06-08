@@ -1,0 +1,8 @@
+#!/bin/bash
+if [[ -z "$1" || -z "$2" ]]; then
+  printf "hg --> help|grep\nUsage: hg [executable] [string to grep for]\n"
+  exit 1
+else 
+  p=$(which $1)
+  [[ -z "$p" ]] && exit 1 || $p --help | grep -i "$2"
+fi
