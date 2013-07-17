@@ -1,7 +1,7 @@
 This is just a small collection of bash scripts I find useful. Use them
 or not, in whatever way you wish.
 
-#Descriptions: 
+#Descriptions
 
 ##bundle 
 My version of the traditional `bundle` shell script, similar to GNU
