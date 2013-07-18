@@ -2,11 +2,12 @@
 # my version of the `bundle' shell script (similar to GNU shar). 
 # create a self-extracting shell archive that can install any file(s).
 # Usage: bundle [OPTIONS] [FILES] > install_whatever.sh
-ver="george's bundle 0.9.3"
+ver="george's bundle 0.9.4"
 b="$(basename $0)"
 presdirs=1
 encode=base64
 PASTETO="${PASTETO-http://paste.chakra-project.org/}"
+crypt=0
 
 main() {
   getargs "$@"
@@ -27,7 +28,7 @@ getargs() {
                                            hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
       "-s"*)                               alg=$(echo "$1" | sed 's/-s//g') 
                                            hashwith=$(echo "sha$alg sum" | sed 's/\s//g');;
-      "-c"|"--crypt")                      crypt;;
+      "-c"|"--crypt")                      crypt=1; cryptwith=${CRYPT_WITH-gpg -c}; ucryptwith=${UCRYPT_WITH-gpg -d};;
       "-z"|"--gz"|"--targz"|"--gzip")      uzipwith="tar -xzf" zipwith="tar -czf";;
       "-j"|"--bz"|"--tarbz"|"--bzip")      uzipwith="tar -xjf" zipwith="tar -cjf";;
       "-x"|"-J"|"--xz"|"--tarxz"|"--xzip") uzipwith="tar -xJf" xz=1 zipwith="tar -cf";;
@@ -59,26 +60,27 @@ usage() {
   echo "  -z, --targz            compress files first with \`tar -czf', then bundle"  
   echo 
   echo "Integrity checking:"
-  echo "  -g, --sign             * use gpg / pgp signatutes to verify files"
   echo "  -sX, --shaX            use shaXsum for file verification instead of $hashwith" 
   echo "                         The sha* option prefers shaXsum, but can use "
   echo "                         \`shasum -a X' as well. Example usage: --sha512, -s256"
-  echo "                         Both -s and -s1 will use sha1." 
+  echo "                         All of -s, -s1, --sha, and --sha1 will use sha1." 
   echo
   echo "Redirect output:"
   echo "  -p, --paste            instead of sending to stdout, send to $PASTETO"
   echo "  -o, --output <file>    instead of sending to stdout, save to <file>"
   echo
   echo "Other:"
-  echo "  -b, --makebat          * create Windoze batch files, instead of bash scripts-"
-  echo "  -c, --crypt            * encrypt files with gpg (public/private key)"
+  echo "  -b, --makebat          * create Windoze batch files, instead of bash scripts"
+  echo "  -c, --crypt            encrypt files with gpg (symmetric only)"
+  echo "                         works only with single files, or with compression options"
   echo "  -d, --delete           delete original files"
   echo "  -e, --uuencode         use uuencode instead of base64 to create archives"
   echo "  -f, --filesonly        don't preserve directory structure, just bundle files"
+  echo "                         cannot be used with compression options"
   echo "  -i, --info <bundle>    * show info on files in a bundle (use '-' for stdin)"
   echo "  -l, --list <bundle>    list files in a bundle, accepts '-' or file as arg"
   echo "  -n, --norecurse        don't recurse subdirectories "
-  echo "                         cannot be used with other options."
+  echo "                         cannot be used with other options"
   echo "  -h, --help             print this help and exit"
   echo "  -v, --version          print version information and exit"
 
@@ -111,8 +113,15 @@ info() {
 }
 
 crypt() {
-  echo "Sorry, this feature is not ready yet."
-  exit 1
+  echo "$b: Encrypting file..." >&2
+  eval $cryptwith "$1"
+  filesarr=("$1.gpg")
+
+  IFS=' '
+  ucryptdo="echo decrypting \$file with \'$ucryptwith\'; owd=\"\$(pwd)\"; cd \"\$dir\"; $ucryptwith \"./\$file\" > \"./\${file/.gpg/}\"; echo removing \$file ...; rm \"./\$file\"; cd \"\$owd\""
+  IFS="$newline"
+
+  [[ $rmfiles == 1 ]] && rm "$1"
 }
 
 check() {
@@ -134,7 +143,7 @@ check() {
         echo "$b: This may cause problems; be warned!" >&2
         hashwith="shasum -a $alg"
       else
-        echo "$b: Invalid algorithm $alg, quitting." >&2
+        echo "$b: Invalid algorithm $alg, quitting in disgust." >&2
         exit 1
       fi
     else
@@ -153,7 +162,7 @@ print() {
     if [[ -w "$saveas" ]]; then
       echo "$@" >> "$saveas"
     else
-      echo "$b: Output file '$saveas' is not writable."
+      echo "$b: Output file '$saveas' is not writable." >&2
       exit 1
     fi
   else
@@ -196,47 +205,69 @@ header() {
     echo "$b: note that the person running the bundled script will need this program" >&2
     print "# This script will use '$uzipwith' to extract files. You must have this program installed."
   fi
+  if [[ $crypt == 1 ]]; then
+    echo "$b: this script will decrypt files with '$ucryptwith'" >&2
+    echo "$b: note that the person running the bundled script will need this program" >&2
+    print "# This script will use '$ucryptwith' to decrypt files. You must have this program installed."
+  fi
   print "integerr=0"
 }
 
 bundle() {
   if [[ -n $files ]]; then
+    if [[ -n $zipwith ]]; then
+      echo "$b: Compressing files first with '$zipwith'... " >&2
+      now=$(date +%s)
+      tempar="/tmp/bundle-${BASHPID-0}.$now"
+      $zipwith $tempar $files
+      if [[ $xz == 1 ]]; then
+        echo "$b: Compressing files with 'xz -ez9'... " >&2
+        xz -ez9 $tempar
+        tempar=$tempar.xz
+      fi
+      files="$tempar"
+      rmfiles=1
+      presdirs=0
+      recurse=0
+    fi
+
+    newline=$'\n'
+    IFS="$newline"
+    if [[ $recurse != 0 ]]; then
+      filesarr=($(find $files))
+    else 
+      filesarr=($files)
+    fi
+
+    if [[ $crypt == 1 ]]; then
+      if [[ ${#filesarr[@]} != 1 ]]; then
+        echo "$b: Sorry, encryption only works on single files." >&2
+        echo "$b: Perhaps try again with a compression method enabled?" >&2
+        exit 1
+      fi
+      if [[ -f $filesarr ]]; then
+        crypt "$filesarr"
+      else
+        echo "$b: That doesn't seem to be a file." >&2
+        echo "$b: Cannot encrypt directories." >&2
+        exit 1
+      fi
+    fi
+
+    echo "$b: Creating bundle..." >&2
     header
-  else 
+  else       
     echo "$b: No files specified, nothing to do." >&2
     exit 1
   fi
 
-  if [[ -n $zipwith ]]; then
-    echo "$b: Compressing files first with '$zipwith'... " >&2
-    now=$(date +%s)
-    tempar="/tmp/bundle-${BASHPID-0}.$now"
-    $zipwith $tempar $files
-    if [[ $xz == 1 ]]; then
-      echo "$b: Compressing files with 'xz -ez9'... " >&2
-      xz -ez9 $tempar
-      tempar=$tempar.xz
-    fi
-    files="$tempar"
-    rmfiles=1
-    presdirs=0
-    recurse=0
-    echo "$b: Creating bundle..." >&2
-  fi
 
-  newline=$'\n'
-  IFS="$newline"
-  if [[ $recurse != 0 ]]; then
-    filesarr=($(find $files))
-  else 
-    filesarr=($files)
-  fi
   for file in "${filesarr[@]}"; do 
     if [[ -z $uzipwith ]]; then 
       uzipdo="# "
     else
       IFS=' '
-      uzipdo="echo unzipping \$file with \'$uzipwith\'; owd=\"\$(pwd)\"; cd \"\$dir\"; $uzipwith \"./\$file\"; echo removing \$file ...; rm \"./\$file\"; cd \"\$owd\""
+      uzipdo="file=\"\${file/.gpg/}\"; echo unzipping \$file with \'$uzipwith\'; owd=\"\$(pwd)\"; cd \"\$dir\"; $uzipwith \"./\$file\"; echo removing \$file ...; rm \"./\$file\"; cd \"\$owd\""
       IFS="$newline"
     fi
     if [[ -d $file ]]; then
@@ -272,6 +303,7 @@ bundle() {
     print "echo -n checking \$dir/\$file file integrity \($hashwith\) ...\ "
     print "filesum=\$($hashwith -b \"\$dir/\$file\" | awk '{printf \$1}')"
     print "if [ \"\$filesum\" == \"$filesum\" ]; then echo looks like \$dir/\$file is ok.; else echo looks like \$dir/\$file is corrupted.; let integerr=\$integerr+1; fi"
+    print "${ucryptdo-#}"
     print "$uzipdo"
     print "# END FILE -- \`$filedir/$file\`"
     print ""
