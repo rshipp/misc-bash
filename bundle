@@ -317,7 +317,7 @@ bundle() {
   if [[ $paste == 1 ]]; then
     pbundle="/tmp/pbundle-${BASHPID}${UID}.sh"
     pbsize=$(stat -c %s "$pbundle")
-    if [[ $pbsize -ge 3145728 ]]; then
+    if [[ $pbsize -ge 131062 ]]; then
       echo "$b: That bundle is too large, declining to paste." >&2
       rm -f "$pbundle"
       exit 1
