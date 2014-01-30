@@ -1,0 +1,40 @@
+#!/bin/bash
+# Manage files in a /dev/shm tmpfs without thinking too hard.
+# Usage:
+#  Source this file in your bashrc, then call its functions.
+
+tmpfs="/dev/shm/tmp"
+
+function mktmp() {
+    # Use like mkdir.
+    for dir in "$@"; do
+        mkdir -p "$tmpfs/$dir"
+    done
+}
+
+function tmp() {
+    # Create a single tempdir and change to it.
+    mktmp "$1"
+    cd "$tmpfs/$1"
+}
+
+function tmpsave() {
+    # Copy a tempdir to the hard drive.
+    # Use like: 
+    #     tmpsave [TMPDIR [TMPDIR2 ..]] TARGET
+    tmparr=()
+    for tmpdir in "$@"; do
+        tmparr+=("$tmpdir")
+    done
+    index=${#tmparr[@]}
+    let index+=-1
+    target="${tmparr[$index]}"
+    unset tmparr[$index]
+    if [[ ${#tmparr[@]} == 0 ]]; then
+        # Only TARGET was provided.
+        cp -Rv "$tmpfs/"* "$target"
+    else
+        # At least one TMPDIR specified.
+        cp -Rv ${tmparr[@]} "$target"
+    fi
+}
