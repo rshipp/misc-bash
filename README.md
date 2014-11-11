@@ -30,6 +30,9 @@ Usage: hg [executable] [string to grep for]
 Download and extract archives of almost any type, including tarballs,
 zips, etc.
 
+##kr
+A prompt in a loop, for sending signals.
+
 ##thinkgeek_fortunes
 A silly script that pulls fortunes from the ThinkGeek fortunes page, and
 creates a `fortune` database out of them. Requires the `convmv`, `hd2u`,

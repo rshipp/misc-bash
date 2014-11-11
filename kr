@@ -1,0 +1,32 @@
+#!/bin/bash
+# kr: kill REPL
+
+main() {
+    if [[ $1 == '-h' || $1 == '--help' ]]; then
+        usage
+    elif [[ $# -gt 0 ]]; then
+        killall=0
+    else
+        kill=0
+    fi
+
+    repl
+}
+
+usage() {
+    echo "$0: kill repl"
+    echo "$0 -a: killall repl"
+    exit 0
+}
+
+repl() {
+    while read -p '> ' first rest; do
+        if [[ $killall ]]; then
+            killall -$first $rest
+        elif [[ $kill ]]; then
+            kill -$first $rest
+        fi
+    done
+}
+
+main $@
